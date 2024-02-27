@@ -1,0 +1,80 @@
+\documentclass[man]{apa7}
+
+%%% Original Packages %%%
+
+\usepackage[american]{babel}
+\usepackage{csquotes}
+\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}
+\DeclareLanguageMapping{american}{american-apa}
+\addbibresource{bibliography.bib}
+
+%%% Packages added by Shadi %%%
+
+%% packages for the tables and captions
+\usepackage{longtable} % tables that continue on other pages
+\usepackage{adjustbox} % for adjusting table
+\usepackage[bottom]{footmisc} % for footnotes
+\usepackage{color} % provides basic color management capabilities in LaTeX
+\usepackage{todonotes} % allows to add "to-do" notes or annotations to document.
+\newcommand{\todoShadi}[1]{\todo[inline,color=orange!30!white]{Shadi: #1}}
+\usepackage{subfiles} % Best loaded last in the preamble. It's for hirarchial main file
+\usepackage{comment} % allows you to include comments and comment out sections of your LaTeX document.
+\usepackage{amsmath} % fundamental for mathematical typesetting 
+\usepackage{mathtools} % extends the capabilities of the amsmath package
+%\usepackage[group-separator={,},group-minimum-digits={3}]{siunitx}: % package is used for formatting units and quantities in a consistent and customizable manner.
+%% to make the table fit your landscape ->
+\usepackage{rotating}               % for the sidewaystable
+\newcommand\fnote[1]{\captionsetup{font=small}\caption*{\normalfont#1}}
+
+
+%%% addrese for folders %%%
+\graphicspath{{figures/}}
+
+
+%%% info for title page %%%
+
+\title{Effect of Medicaid Expansion on Health Outcome}
+\shorttitle{Medicaid Expansion and Foreign-born Adults}
+\author{Shadi Seyedi}
+\affiliation{University of Maryland Baltimore County}
+\leftheader{Weiss}
+\abstract{}
+\keywords{Medicaid Expansion, Foreign Born, Insurance Gain}
+%\authornote{
+%\addORCIDlink{Shadi Seyedi }{0000-0000-0000-0000}
+%Correspondence concerning this article should be addressed to Shadi Seyedi,  E-mail: sseyedi1@umbc.edu}
+
+
+%%% Starting the Main document %%%
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+    \subfile{sections/1-introduction}
+\section{Theoretical framework}
+    \subfile{sections/2-theory}
+\section{Data}
+    \subfile{sections/3-data}
+\section{Empirical Strategies}
+    \subfile{sections/4-method}
+
+\section{Results}
+    \subfile{sections/5-result}
+
+\section{Discussion}
+   \subfile{sections/8-discussion}
+
+%\section{Conclusion}
+ %  \subfile{sections/6-conclusion}
+
+\printbibliography
+
+\appendix
+   \subfile{sections/9-apx}
+
+
+
+
+\end{document}

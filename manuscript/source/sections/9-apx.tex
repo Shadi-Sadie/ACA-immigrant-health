@@ -1,0 +1,155 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+
+
+
+\end{document}
+
+
+There are more foreign born uninsured 
+thus the uninsured for Foreign-born should reduce more.
+
+
+
+\begin{table}[!htbp] 
+ \caption{Difference-in-differences Model Specifications }
+
+\centering
+   \setlength{\arrayrulewidth}{1cm}
+    \setlength{\tabcolsep}{8pt}
+    \renewcommand*{\arraystretch}{0.6}
+ % Panel A   
+      \begin{tabular}{lccc}
+       \multicolumn{5}{l}{\textbf{Panel A: Uninsured}} \\
+\toprule \toprule
+            & (1)            & (2)            & (3)\\  
+         \midrule 
+         Medicaid Expansion                        & -0.075$^{***}$ & -0.076$^{***}$ & -0.083$^{***}$\\   
+                                                   & (0.002)        & (0.002)        & (0.002)\\   
+         Foreign-Born                              & 0.244$^{***}$  & 0.036$^{**}$   & -0.083$^{***}$\\   
+                                                   & (0.001)        & (0.018)        & (0.018)\\   
+         Medicaid Expansion $\times$ Foreign-Born  & -0.031$^{***}$ & -0.003         & 0.033$^{***}$\\   
+                                                   & (0.002)        & (0.002)        & (0.003)\\   
+         \midrule 
+         Controls x Foreign-born                   & no             & no             & yes\\  
+         Controls                                  &                & yes            & yes\\  
+         State and Year FE                         & yes            & yes            & yes\\  
+         \midrule 
+         Observations                              & 1,975,594      & 1,975,594      & 1,975,594\\  
+         R$^2$                                     & 0.10174        & 0.17577        & 0.17791\\  
+         Within R$^2$                              & 0.04288        & 0.12176        & 0.12404\\  
+      \bottomrule
+      \end{tabular}
+   \begin{tabular}{lccc}
+   \tabularnewline
+      \tabularnewline
+          \multicolumn{5}{l}{\textbf{Panel B: Medicaid}} \\
+
+      \midrule \midrule
+                                                   & (1)            & (2)            & (3)\\  
+         \midrule 
+         Medicaid Expansion                        & 0.136$^{***}$  & 0.136$^{***}$  & 0.141$^{***}$\\   
+                                                   & (0.002)        & (0.002)        & (0.002)\\   
+         Foreign-Born                              & -0.158$^{***}$ & -0.168$^{***}$ & -0.038$^{**}$\\   
+                                                   & (0.001)        & (0.016)        & (0.016)\\   
+         Medicaid Expansion $\times$ Foreign-Born  & 0.007$^{***}$  & -0.006$^{***}$ & -0.036$^{***}$\\   
+                                                   & (0.002)        & (0.002)        & (0.003)\\   
+         \midrule 
+         Controls x Foreign-born                   & no             & no             & yes\\  
+         Controls                                  &                & yes            & yes\\  
+         State and Year FE                         & yes            & yes            & yes\\  
+         \midrule 
+         Observations                              & 1,975,594      & 1,975,594      & 1,975,594\\  
+         R$^2$                                     & 0.08522        & 0.19031        & 0.19429\\  
+         Within R$^2$                              & 0.02242        & 0.13473        & 0.13898\\  
+            \bottomrule \bottomrule
+            
+        \multicolumn{4}{r}{\emph{continued on next page} } \\
+
+    %                     &           &             & \emph{continued on next page} \\  
+      \end{tabular}
+
+   
+\end{table}
+
+
+\begin{table}[!htbp]  
+\centering
+   \ContinuedFloat
+
+  \setlength{\arrayrulewidth}{1cm}
+    \setlength{\tabcolsep}{8pt}
+    \renewcommand*{\arraystretch}{0.6}
+
+      \begin{tabular}{lccc}
+               \tabularnewline
+
+               \multicolumn{4}{r}{\emph{(continued)}} \\
+                        \tabularnewline
+
+                \multicolumn{4}{l}{\textbf{Panel C: Directly Purchased}} \\
+
+       \midrule \midrule
+                                                   & (1)            & (2)            & (3)\\  
+         \midrule 
+         Medicaid Expansion                        & -0.030$^{***}$ & -0.030$^{***}$ & -0.029$^{***}$\\   
+                                                   & (0.0010)       & (0.001)        & (0.001)\\   
+         Foreign-Born                              & -0.019$^{***}$ & 0.031$^{***}$  & 0.031$^{***}$\\   
+                                                   & (0.0008)       & (0.010)        & (0.011)\\   
+         Medicaid Expansion $\times$ Foreign-Born  & -0.003$^{***}$ & -0.011$^{***}$ & -0.017$^{***}$\\   
+                                                   & (0.001)        & (0.001)        & (0.002)\\   
+         \midrule 
+         Controls x Foreign-born                   & no             & no             & yes\\  
+         Controls                                  &                & yes            & yes\\  
+         State and Year FE                         & yes            & yes            & yes\\  
+         \midrule 
+         Observations                              & 1,975,594      & 1,975,594      & 1,975,594\\  
+         R$^2$                                     & 0.00827        & 0.05070        & 0.05183\\  
+         Within R$^2$                              & 0.00162        & 0.04433        & 0.04547\\  
+               \bottomrule
+
+      \end{tabular}
+
+
+\begin{tabular}{lccc}
+         \tabularnewline
+        \multicolumn{4}{l}{\textbf{Panel D: Employer-Sponsored}} \\
+         \midrule \midrule
+
+                                                   & (1)            & (2)            & (3)\\  
+         \midrule 
+         Medicaid Expansion                        & -0.024$^{***}$ & -0.022$^{***}$ & -0.023$^{***}$\\   
+                                                   & (0.001)        & (0.001)        & (0.001)\\   
+         Foreign-Born                              & -0.043$^{***}$ & 0.057$^{***}$  & 0.062$^{***}$\\   
+                                                   & (0.001)        & (0.014)        & (0.014)\\   
+         Medicaid Expansion $\times$ Foreign-Born  & 0.018$^{***}$  & 0.010$^{***}$  & 0.014$^{***}$\\   
+                                                   & (0.002)        & (0.002)        & (0.002)\\   
+         \midrule 
+         Controls x Foreign-born                   & no             & no             & yes\\  
+         Controls                                  &                & yes            & yes\\  
+         State and Year FE                         & yes            & yes            & yes\\  
+         \midrule 
+         Observations                              & 1,975,594      & 1,975,594      & 1,975,594\\  
+         R$^2$                                     & 0.00411        & 0.10451        & 0.10807\\  
+         Within R$^2$                              & 0.00165        & 0.10230        & 0.10586\\  
+         \midrule \midrule
+
+        \multicolumn{4}{l}{Notes: Each column in each panel represents a separate regression. The unit}\\
+        \multicolumn{4}{l}{ of observation is state-year.Standard errors are clustered at the state level.} \\
+        \multicolumn{4}{l}{controls include:age, sex, race and ethnicity, marital status, years of educ-} \\
+        \multicolumn{4}{l}{ation,employment status, English proficiency, Federal Poverty Level,disab-} \\
+        \multicolumn{4}{l}{ ility status,Percentage life lived in US, structural xenophobia,  state } \\
+        \multicolumn{4}{l}{ political ideology, and state unemployment rate.controls in Controls x } \\
+        \multicolumn{4}{l}{ Foreign-born term include education, marital status, race and ethnicity}\\ 
+        \multicolumn{4}{l}{employment status,  structural xenophobia, state political ideology} \\
+        \multicolumn{4}{l}{ and state unemployment rate}           
+         
+      \end{tabular}
+\end{table}
+
+
+
+\begin{tablenotes}
+Notes: This play displays result form linear probability models DiD specification \ref{eq:eq1} for 4 outcome, no control variable included for this result. Heteroskedasticity-robust standard-errors are in parentheses,Signif. Codes: ***: 0.01, **: 0.05, *: 0.1
+\end{tablenotes}
