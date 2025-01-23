@@ -1,154 +1,183 @@
-#'-----------------------------------------------------------------------------
-# 
-# Input files:
-# 
-# Resources:
-#  - CCSR codes: 
-#     https://github.com/HHS-AHRQ/MEPS/blob/master/Quick_Reference_Guides/meps_ccsr_conditions.csv
-# 
-#  - MEPS-HC Public Use Files: 
-#     https://meps.ahrq.gov/mepsweb/data_stats/download_data_files.jsp
-# 
-#  - MEPS-HC data tools: 
-#     https://datatools.ahrq.gov/meps-hc
-#'-----------------------------------------------------------------------------  
-
-
-# Load libraries
-library(dplyr)
-library(tidyr)
-library(survey)
+library(foreign)
+library(devtools)
+library(survey) # handeling survey package
+library(tidyverse)
 library(haven)
-library(MEPS)
+library(labelled)
+library(broom)
+library(MEPS)  # readin MEPS data
+library(readxl) # reading 
+library(fixest)
+
+#####################
+# read condition data
+##################### 
+yearset<- 2011:2019
+condsets <- vector("list", length(2016:2019))
+
+for( i in seq_along(yearset)) {
+    
+    condsets[[i]] = read_MEPS(year = yearset[[i]] , type = "COND")
+    
+}
+
+COND16 <- condsets[[1]]
+COND17 <- condsets[[2]]
+COND18 <- condsets[[3]]
+COND19 <- condsets[[4]]
 
 
-# Set global options 
-
-options(survey.lonely.psu="adjust") # survey option for lonely PSUs
-options(dplyr.width = Inf) # so columns won't be truncated when printing
-options(digits = 10) # so big numbers aren't defaulted to scientific notation
 
 
-# Load datasets ---------------------------------------------------------------
-
-# IP   = Hospital stay, inpatient stay file (record = hospital stay)
-# COND = Medical conditions file (record = medical condition)
-# CLNK = Conditions-event link file (crosswalk between conditions and events)
-# FYC  = Full year consolidated file (record = MEPS sample person)
+#######################################
+# Create variable Avoidable Mortality 
+# for years 2016-2019 based on ICD 10 
+# #######################################
 
 
-# Option 1 - load data files using read_MEPS from the MEPS package
-ip19  = read_MEPS(year = 2019, type = "IP")
-cond19 = read_MEPS(year = 2019, type = "COND")
-clnk19 = read_MEPS(year = 2019, type = "CLNK")
-
-# Keep only needed variables --------------------------------------------------
-
-#  Browse variables using MEPS-HC data tools variable explorer: 
-#  -> http://datatools.ahrq.gov/meps-hc#varExp
+#for each DUPERSID check if ICD10CDX is among c("E11") if ICD 10 was among this then check if IPNUM > 0 then AvdHOSP == 1 if 
 
 
-ip19x   = ip19 %>% 
-    select( DUPERSID, EVNTIDX, PERWT19F, VARPSU, VARSTR)
-
-cond19x = cond19 %>% 
-    select(DUPERSID, CONDIDX, ICD10CDX, CCSR1X:CCSR3X)
-
-fyc19x  = fyc19 %>% 
-    select(DUPERSID, PERWT19F, VARSTR, VARPSU,RACE)
-
-# Filter COND file to only condition that can end-up in hospitalization based on the PQI index -----------------------
-
-conditions = cond19x %>% 
-    # filter(ICD10CDX=='E11')
-    filter(ICD10CDX %in% c('E11', 'I10','J44', "J45", "I50",'J18', 'N39' ))  # Include both diabetes and hypertension
-
-# view ICD10-CCSR combinations for mental health
-conditions %>% 
-    count(ICD10CDX, CCSR1X, CCSR2X, CCSR3X) %>% 
-    print(n = 100)
-
-# Filter CLNK file to only Inpatient-stay visits --------------------------------
-#  EVENTYPE:
-#   1 = "Office-based"
-#   2 = "Outpatient" 
-#   3 = "Emergency room"
-#   4 = "Inpatient stay"
-#   7 = "Home health"
-#   8 = "Prescribed medicine"                                            
-
-clnk_ob = clnk19 %>% 
-    filter(EVENTYPE == 4)
+fycsets <- list(fyc16, fyc17, fyc18, fyc19)
 
 
-# Merge datasets --------------------------------------------------------------
-
-# Merge conditions file with the conditions-event link file (CLNK)
-
-cd_clnk = inner_join(
-    conditions,
-    clnk_ob,
-    by = c("DUPERSID", "CONDIDX"),
-    relationship= "many-to-many")
-
-# De-duplicate by event ID ('EVNTIDX'), since someone can have multiple events 
-cd_clnk_nodup = cd_clnk %>%  
-    group_by(DUPERSID, EVNTIDX, EVENTYPE) %>% 
-    slice(1) %>%  # Keep the first row for each group
-    ungroup()
-
-# Merge on event files --------------------------------------------------------
-ip_condition = inner_join(ip19x, cd_clnk_nodup) %>% 
-    # Add indicator variables for all visits to help with counting later:
-    mutate(
-        ip_diabetes = ifelse(ICD10CDX == 'E11', 1, 0),     # Indicator for hospitalization due to diabetes
-        ip_hypertension = ifelse(ICD10CDX == 'I10', 1, 0),#  Indicator for hospitalization due to hypertension
-        ip_copd = ifelse(ICD10CDX %in% c('J44', "J45") , 1, 0), # Indicator for hospitalization due to COPD or ASthma
-        ip_chf = ifelse(ICD10CDX == 'I50', 1, 0),#  Indicator for hospitalization due to Congestive Heart Failure (
-        ip_pneumonia = ifelse(ICD10CDX == 'J18', 1, 0),#  Indicator for hospitalization due to Bacterial Pneumonia (
-        ip_uti = ifelse(ICD10CDX == 'N39', 1, 0),# Indicator for hospitalization due to  Urinary Tract Infection
-        ip_hosp =1
-    )
-
-# Merge on FYC file for complete Strata, PSUs ---------------------------------
-
-ip_cd_fyc = full_join(
-    ip_condition %>% mutate(cd_ip = 1), 
-    fyc19x %>% mutate(fyc = 1)) 
-
-# Person-level estimates ------------------------------------------------------
-
-# Aggregate to person-level 
-pers_cd = ip_cd_fyc %>% 
-    group_by(DUPERSID, VARSTR, VARPSU, PERWT19F) %>% 
-    summarize(
-        ip_visit_diabetes = max(ip_diabetes) , # Proportion hospitalized for diabetes
-        ip_visit_hypertension = max(ip_hypertension),
-        ip_visit_copd = max(ip_copd),
-        ip_visit_chf = max(ip_chf),
-        ip_visit_pneumonia = max(ip_pneumonia), 
-        ip_visit_uti= max(ip_uti),
-        avoidble_hosp = mean(ip_hosp),
+for (i in seq_along(fycsets)) {
+    
+    condata <- condsets[[i+5]]
+    fycdata <- fycsets[[i]]
+    
+    
+    condata <- condata %>%
+        mutate (
+            ip_diabetes = ifelse(ICD10CDX == 'E11' & IPNUM > 0, 1, 0),     # Indicator for hospitalization due to diabetes
+            ip_hypertension = ifelse(ICD10CDX == 'I10' & IPNUM > 0, 1, 0),#  Indicator for hospitalization due to hypertension
+            ip_copd = ifelse(ICD10CDX %in% c('J44', 'J45') & IPNUM > 0 , 1, 0), # Indicator for hospitalization due to COPD or ASthma
+            ip_chf = ifelse(ICD10CDX == 'I50' & IPNUM > 0, 1, 0),#  Indicator for hospitalization due to Congestive Heart Failure (
+            ip_pneumonia = ifelse(ICD10CDX == 'J18' & IPNUM > 0, 1, 0),#  Indicator for hospitalization due to Bacterial Pneumonia (
+            ip_uti = ifelse(ICD10CDX == 'N39' & IPNUM > 0, 1, 0),# Indicator for hospitalization due to  Urinary Tract Infection
+            ip_AvdHOSP = ifelse(ICD10CDX %in% c('E11', 'I10', 'J44', 'J45', 'I50', 'J18', 'N39') & IPNUM > 0, 1, 0)
+        )
+    
+    #class(COND18$ICD10CDX)
+    data_aggregated = condata %>% 
+        group_by(DUPERSID, VARSTR, VARPSU ) %>% 
+        summarize(
+            ip_diabetes = max(ip_diabetes) , # Proportion hospitalized for diabetes
+            ip_hypertension = max(ip_hypertension),
+            ip_copd = max(ip_copd),
+            ip_chf = max(ip_chf),
+            ip_pneumonia = max(ip_pneumonia), 
+            ip_uti= max(ip_uti),
+            ip_AvdHOSP = max(ip_AvdHOSP),
+            
+        ) %>% # replace missings with 0s
+        mutate(across(starts_with("ip"), ~ replace_na(.x, 0))
+        )%>%   # Replace missing values with 0 for all `visit_*` columns
+        set_variable_labels(
+            ip_diabetes = "Hospital Stay Due to Diabetes",
+            ip_hypertension = "Hospital Stay Due to Hypertension",
+            ip_copd = "Hospital Stay Due to COPD",
+            ip_chf = "Hospital Stay Due to CHF",
+            ip_pneumonia = "Hospital Stay Due to Pneumonia",
+            ip_uti = "Hospital Stay Due to UTI",
+            ip_AvdHOSP = "Avoidable Hospital Stay"
+        )
+    
+    
+    
+    fycjoined <- fycdata %>%          # Merge Avoidable Hospitalization with annual data
         
-    ) %>%
+        left_join(data_aggregated
+        ) %>%
+        mutate(across(starts_with("ip"), ~ replace_na(.x, 0)))
     
-    replace_na(
-        list(avoidable_hospitalization = 0 )
-    ) %>% # replace missings with 0s
     
-    mutate(across(starts_with("ip"), ~ replace_na(.x, 0)))  # Replace missing values with 0 for all `visit_*` columns
-%>% 
-    set_variable_labels(
-        ip_visit_diabetes = "Hospital Stay Due to Diabetes",
-        ip_visit_hypertension = "Hospital Stay Due to Hypertension",
-        ip_visit_copd = "Hospital Stay Due to COPD",
-        ip_visit_chf = "Hospital Stay Due to CHF",
-        ip_visit_pneumonia = "Hospital Stay Due to Pneumonia",
-        ip_visit_uti = "Hospital Stay Due to UTI",
-        avoidable_hospitalization = "Avoidable Hospital Stay"
-    )
+    fycsets[[i]] <- fycjoined
+    
+}
 
-# Merge back into fyc
 
-fyc19 <- fyc19 %>%
-    left_join(pers_cd, by = c("DUPERSID" , 'VARSTR', 'VARPSU', 'PERWT19F'))
+
+agfyc16<-fycsets[[1]]
+agfyc17<-fycsets[[2]]
+agfyc18<-fycsets[[3]]
+agfyc19<-fycsets[[4]]
+
+
+
+#######################################
+# Create variable Avoidable Mortality 
+# for years 2016-2019 based on ICD 9 
+# #######################################
+
+fycsets <- list(fyc11, fyc12, fyc13, fyc14,fyc15)
+
+
+for (i in seq_along(fycsets)) {
+    
+    condata <- condsets[[i]]
+    fycdata <- fycsets[[i]]
+    
+    
+    condata <- condata %>%
+        mutate (
+            ip_diabetes = ifelse(ICD9CODX == '250' & IPNUM > 0, 1, 0),     # Indicator for hospitalization due to diabetes
+            ip_hypertension = ifelse(ICD9CODX %in% c('401', '402', '403') & IPNUM > 0, 1, 0),#  Indicator for hospitalization due to hypertension
+            ip_copd = ifelse(ICD9CODX %in% c('491','490', '496', '466','492', '494') & IPNUM > 0 , 1, 0), # Indicator for hospitalization due to COPD or ASthma
+            ip_chf = ifelse(ICD9CODX %in% c('428','398') & IPNUM > 0, 1, 0),#  Indicator for hospitalization due to Congestive Heart Failure (
+            ip_pneumonia = ifelse(ICD9CODX %in% c('480', '481', '482', '483', '486','486') & IPNUM > 0, 1, 0),#  Indicator for hospitalization due to Bacterial Pneumonia (
+            ip_uti = ifelse(ICD9CODX %in% c('599') & IPNUM > 0, 1, 0),# Indicator for hospitalization due to  Urinary Tract Infection
+            ip_AvdHOSP = ifelse(ICD9CODX  %in% c('250', '401', '402', '403', '491', '490', '492', '496', '466', '494',
+                                                 '428', '398', '480', '481', '482', '483', '486', '599') & IPNUM > 0, 1, 0 )
+        )
+    
+    #class(COND18$ICD10CDX)
+    data_aggregated = condata %>% 
+        group_by(DUPERSID, VARSTR, VARPSU ) %>% 
+        summarize(
+            ip_diabetes = max(ip_diabetes) , # Proportion hospitalized for diabetes
+            ip_hypertension = max(ip_hypertension),
+            ip_copd = max(ip_copd),
+            ip_chf = max(ip_chf),
+            ip_pneumonia = max(ip_pneumonia), 
+            ip_uti= max(ip_uti),
+            ip_AvdHOSP = max(ip_AvdHOSP),
+            
+        ) %>% # replace missings with 0s
+        mutate(across(starts_with("ip"), ~ replace_na(.x, 0))
+        )%>%   # Replace missing values with 0 for all `visit_*` columns
+        set_variable_labels(
+            ip_diabetes = "Hospital Stay Due to Diabetes",
+            ip_hypertension = "Hospital Stay Due to Hypertension",
+            ip_copd = "Hospital Stay Due to COPD",
+            ip_chf = "Hospital Stay Due to CHF",
+            ip_pneumonia = "Hospital Stay Due to Pneumonia",
+            ip_uti = "Hospital Stay Due to UTI",
+            ip_AvdHOSP = "Avoidable Hospital Stay"
+        )
+    
+    
+    
+    fycjoined <- fycdata %>%          # Merge Avoidable Hospitalization with annual data
+        
+        left_join(data_aggregated
+        ) %>%
+        mutate(across(starts_with("ip"), ~ replace_na(.x, 0)))
+    
+    
+    fycsets[[i]] <- fycjoined
+    
+}
+
+
+
+agfyc11<-fycsets[[1]]
+agfyc12<-fycsets[[2]]
+agfyc13<-fycsets[[3]]
+agfyc14<-fycsets[[4]]
+agfyc15<-fycsets[[5]]
+
+
+
+
+
